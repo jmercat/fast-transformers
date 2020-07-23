@@ -10,6 +10,7 @@
 from .attention_layer import AttentionLayer
 from .full_attention import FullAttention
 from .linear_attention import LinearAttention
+from .linear_softmax_attention import LinearSoftmaxAttention
 from .causal_linear_attention import CausalLinearAttention
 from .clustered_attention import ClusteredAttention
 from .improved_clustered_attention import ImprovedClusteredAttention

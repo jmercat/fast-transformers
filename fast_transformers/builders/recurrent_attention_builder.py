@@ -24,13 +24,13 @@ class RecurrentAttentionBuilder(object):
     def attention_type(self):
         """The attention implementation.
 
-        One of {'full', 'linear', 'causal-linear'}.
+        One of {'full', 'linear', 'linear-softmax', 'causal-linear'}.
         """
         return self._attention_type
 
     @attention_type.setter
     def attention_type(self, val):
-        attentions = ["full", "linear", "causal-linear"]
+        attentions = ["full", "linear", "linear-softmax", "causal-linear"]
         if val not in attentions:
             raise ValueError(("{!r} is not one of the available attention "
                               "types {!r}").format(val, attentions))

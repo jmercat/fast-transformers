@@ -33,7 +33,7 @@ from ..attention import AttentionLayer, FullAttention, \
     ClusteredAttention, ImprovedClusteredAttention, \
     ImprovedClusteredCausalAttention, \
     ReformerAttention, ConditionalFullAttention, \
-    ExactTopKAttention
+    ExactTopKAttention, LinearSoftmaxAttention
 from ..transformers import TransformerEncoder, \
     TransformerEncoderLayer
 
@@ -152,6 +152,7 @@ class TransformerEncoderBuilder(BaseTransformerBuilder, CommonEncoderBuilder,
                 self.attention_dropout
             ),
             "linear": partial(LinearAttention, self.linear_feature_map),
+            "linear-softmax": partial(SoftmaxLinearAttention, self.linear_feature_map),
             "causal-linear": partial(
                 CausalLinearAttention,
                 self.linear_feature_map

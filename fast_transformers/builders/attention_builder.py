@@ -33,7 +33,7 @@ class AttentionBuilder(object):
     def attention_type(self):
         """The attention implementation.
 
-        One of {'full', 'linear', 'causal-linear', 'clustered',
+        One of {'full', 'linear', 'linear-softmax', 'causal-linear', 'clustered',
                 'improved-clustered', 'improved-causal', 'reformer',
                 'exact-topk'}.
         """
@@ -42,7 +42,7 @@ class AttentionBuilder(object):
     @attention_type.setter
     def attention_type(self, val):
         attentions = ["full", "clustered", "improved-clustered",
-                      "improved-causal", "linear", "causal-linear",
+                      "improved-causal", "linear", "linear-softmax", "causal-linear",
                       "reformer", "exact-topk"]
         if val not in attentions:
             raise ValueError(("{!r} is not one of the available attention "

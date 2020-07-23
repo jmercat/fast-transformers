@@ -85,6 +85,7 @@ class RecurrentEncoderBuilder(BaseTransformerBuilder, CommonEncoderBuilder,
         attentions = {
             "full": full,
             "linear": linear,
+            "linear-softmax": linear,
             "causal-linear": linear
         }
         
