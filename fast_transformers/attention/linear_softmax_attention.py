@@ -12,19 +12,21 @@ from torch.nn import Module
 import math
 
 class LinearSoftmaxAttention(Module):
-    """Implement unmasked attention using dot product of feature maps in
-    O(N D^2) complexity.
+    """Implement unmasked linearized softmax attention using dot product of feature maps in
+    O(N D^3) complexity.
 
     Given the queries, keys and values as Q, K, V instead of computing
 
         V' = softmax(Q.mm(K.t()), dim=-1).mm(V),
 
-    we make use of a feature map function Φ(.) and perform the following
-    computation
+    we make use second order Taylor expansion of the exponential around 0.
+    To that en we normalize the key and query with layer_norm(./(alpha * sqrt(D))
+    so that the values are around 0.
+    Then, we perform the following computation:
 
-        V' = normalize(Φ(Q).mm(Φ(K).t())).mm(V).
+        V' = 2nd_order_softmax(norm(Q).mm(norm(K).t())).mm(V).
 
-    The above can be computed in O(N D^2) complexity where D is the
+    The above can be computed in O(N D^3) complexity where D is the
     dimensionality of Q, K and V and N is the sequence length. Depending on the
     feature map, however, the complexity of the attention might be limited.
 
