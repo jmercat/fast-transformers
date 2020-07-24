@@ -9,7 +9,7 @@
 import torch
 import torch.nn as nn
 from torch.nn import Module
-
+import math
 
 class LinearSoftmaxAttention(Module):
     """Implement unmasked attention using dot product of feature maps in
@@ -30,24 +30,24 @@ class LinearSoftmaxAttention(Module):
 
     Arguments
     ---------
-        feature_map: callable, a callable that applies the feature map to the
-                     last dimension of a tensor (default: elu(x)+1)
+        query_dimensions: int, the dimensionality of the query vectors.
+        alpha: float, should be >1, a normalization constant to constrain the key, query values around 0, the higher alpha the tighter around 0. (default: 3)
         eps: float, a small number to ensure the numerical stability of the
              denominator (default: 1e-6)
     """
-    def __init__(self, alpha=None, eps=1e-6):
+    def __init__(self, query_dimensions, alpha=3, eps=1e-6):
         super(LinearSoftmaxAttention, self).__init__()
-        self.alpha = alpha or 3
+        self.alpha = alpha
         self.eps = eps
-        self.norm_key = nn.LayerNorm(out_channels, elementwise_affine=False)
-        self.norm_query = nn.LayerNorm(out_channels, elementwise_affine=False)
+        self.norm_key = nn.LayerNorm(query_dimensions, elementwise_affine=False)
+        self.norm_query = nn.LayerNorm(query_dimensions, elementwise_affine=False)
 
 
     def forward(self, queries, keys, values, attn_mask, query_lengths,
                 key_lengths):
         # Apply the normalization to the queries and keys
-        Q = self.norm_key(queries)
-        K = self.norm_query(keys)/(self.alpha*math.sqrt(keys.shape[-1]))
+        Q = self.norm_query(queries)
+        K = self.norm_key(keys)/(self.alpha*math.sqrt(keys.shape[-1]))
 
         # Apply the key padding mask and make sure that the attn_mask is
         # all_ones
@@ -64,7 +64,7 @@ class LinearSoftmaxAttention(Module):
 
         # order0 = values.sum(2, keepdims=True).repeat(1, query.shape[2], 1, 1)
         order0 = 0 # Substract one trick to allow 0 correlation values
-        KV = torch.einsum("nshd, nshm->nhmd", K, V)
+        KV = torch.einsum("nshd, nshm->nhmd", K, values)
         order1 = torch.einsum("nlhd, nhmd -> nlhm", Q, KV)
         QQ = torch.einsum("nlhd,nlhe->nlhde", Q, Q)
         KKV = torch.einsum("nshd,nshe,nshm->nshdem", K, K, values)
@@ -72,7 +72,7 @@ class LinearSoftmaxAttention(Module):
 
         # norm = Q.shape[2]
         norm = 0 # Substract one trick to allow 0 correlation values
-        norm = norm + torch.einsum("nlhd, nshd->nlh", Q, K.sum(2))
+        norm = norm + torch.einsum("nlhd, nhd->nlh", Q, K.sum(1))
         KK = torch.einsum("nshd, nshe->nhde", K, K)
         norm = norm + 0.5 * torch.einsum("nlhde, nhde->nlh", QQ, KK)
         V = (order0 + order1 + order2) / norm.unsqueeze(-1)

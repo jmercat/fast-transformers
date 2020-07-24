@@ -152,14 +152,14 @@ class TransformerEncoderBuilder(BaseTransformerBuilder, CommonEncoderBuilder,
                 self.attention_dropout
             ),
             "linear": partial(LinearAttention, self.linear_feature_map),
-            "linear-softmax": partial(SoftmaxLinearAttention, self.linear_feature_map),
+            "linear-softmax": partial(LinearSoftmaxAttention, self.query_dimensions),
             "causal-linear": partial(
                 CausalLinearAttention,
                 self.linear_feature_map
             )
         }
         attention = attentions[self.attention_type]()
-
+        
         if self.conditional_attention:
             attention = ConditionalFullAttention(
                 attention,
