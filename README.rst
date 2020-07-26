@@ -19,63 +19,87 @@ with 1000 elements.
 
 .. code:: python
 
-    import torch
-    from fast_transformers.builders import TransformerEncoderBuilder
+        import torch
+        from fast_transformers.builders import TransformerEncoderBuilder
 
-    # Create the builder for our transformers
-    builder = TransformerEncoderBuilder.from_kwargs(
-        n_layers=8,
-        n_heads=8,
-        query_dimensions=64,
-        value_dimensions=64,
-        feed_forward_dimensions=1024
-    )
+        n_heads = 8
+        query_dimensions = 16
+        value_dimensions = 32
+        feed_forward_dimensions = 10000
 
-    # Build a transformer with softmax attention
-    builder.attention_type = "full"
-    softmax_model = builder.get()
+            # Create the builder for our transformers
+        builder = TransformerEncoderBuilder.from_kwargs(
+                n_layers=2,
+                n_heads=n_heads,
+                query_dimensions=query_dimensions,
+                value_dimensions=value_dimensions,
+                feed_forward_dimensions=feed_forward_dimensions
+                )
 
-    # Build a transformer with linear attention
-    builder.attention_type = "linear"
-    linear_model = builder.get()
+            # Build a transformer with softmax attention
+        builder.attention_type = "full"
+        softmax_model = builder.get()
 
-    # Construct the dummy input
-    X = torch.rand(10, 1000, 8*64)
+             # Build a transformer with linear attention
+        builder.attention_type = "linear"
+        linear_model = builder.get()
 
-    # Prepare everythin for CUDA
-    X = X.cuda()
-    softmax_model.cuda()
-    softmax_model.eval()
-    linear_model.cuda()
-    linear_model.eval()
+           # Build a transformer with linear attention
+        builder.attention_type = "linear-softmax"
+        linear_softmax_model = builder.get()
 
-    # Warmup the GPU
-    with torch.no_grad():
-        softmax_model(X)
-        linear_model(X)
-    torch.cuda.synchronize()
+            # Construct the dummy input
+        X = torch.rand(1, feed_forward_dimensions, n_heads*value_dimensions)
 
-    # Measure the execution time
-    softmax_start = torch.cuda.Event(enable_timing=True)
-    softmax_end = torch.cuda.Event(enable_timing=True)
-    linear_start = torch.cuda.Event(enable_timing=True)
-    linear_end = torch.cuda.Event(enable_timing=True)
+            # Prepare everything for CUDA
+        X = X.cuda()
+        softmax_model.cuda()
+        softmax_model.eval()
+        linear_model.cuda()
+        linear_model.eval()
+        linear_softmax_model.cuda()
+        linear_softmax_model.eval()
 
-    with torch.no_grad():
-        softmax_start.record()
-        y = softmax_model(X)
-        softmax_end.record()
+            # Warmup the GPU
+        with torch.no_grad():
+            softmax_model(X)
+            linear_model(X)
+            linear_softmax_model(X)
         torch.cuda.synchronize()
-        print("Softmax: ", softmax_start.elapsed_time(softmax_end), "ms")
-        # Softmax: 144 ms (on a GTX1080Ti)
 
-    with torch.no_grad():
-        linear_start.record()
-        y = linear_model(X)
-        linear_end.record()
-        torch.cuda.synchronize()
-        print("Linear: ", linear_start.elapsed_time(linear_end), "ms")
-        # Linear: 68 ms (on a GTX1080Ti)
+            # Measure the execution time
+        softmax_start = torch.cuda.Event(enable_timing=True)
+        softmax_end = torch.cuda.Event(enable_timing=True)
+        linear_start = torch.cuda.Event(enable_timing=True)
+        linear_end = torch.cuda.Event(enable_timing=True)
+        linear_softmax_start = torch.cuda.Event(enable_timing=True)
+        linear_softmax_end = torch.cuda.Event(enable_timing=True)
+
+        with torch.no_grad():
+            softmax_start.record()
+            y = softmax_model(X)
+            softmax_end.record()
+            torch.cuda.synchronize()
+            print("Softmax: ", softmax_start.elapsed_time(softmax_end), "ms")
+            # Softmax: 144 ms (on a GTX1080Ti)
+
+        with torch.no_grad():
+            linear_start.record()
+            y = linear_model(X)
+            linear_end.record()
+            torch.cuda.synchronize()
+            print("Linear: ", linear_start.elapsed_time(linear_end), "ms")
+
+        with torch.no_grad():
+            linear_softmax_start.record()
+            y = linear_softmax_model(X)
+            linear_softmax_end.record()
+            torch.cuda.synchronize()
+            print("Linear Softmax: ", linear_softmax_start.elapsed_time(linear_softmax_end), "ms")
+       # Softmax: 117 ms (on a Tesla V100)
+       # Linear: 25 ms (on a Tesla V100)
+       # Linear Softmax: 60 ms (on a Tesla V100)
+
 
 Dependencies & Installation
 ---------------------------
